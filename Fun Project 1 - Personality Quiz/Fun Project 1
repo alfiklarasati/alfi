@@ -1,0 +1,95 @@
+import streamlit as st
+
+ROLES = ["Introvert", "Ambivert", "Ekstrovert"]
+
+
+QUESTIONS = [
+    {
+        "pertanyaan": "Kalau lagi ada di acara rame kayak pesta atau kumpul bareng banyak orang, biasanya kamu gimana?",
+        "pilihan": [
+            "capek banget, mending ngobrol sama beberapa orang aja atau malah pengen pulang",
+            "Tergantung mood sih, kadang semangat, kadang pengen ngumpet dulu",
+            "Makin rame makin seru! Energiku naik kalau ketemu banyak orang"
+        ]
+    },
+    {
+        "pertanyaan": "Dikasih waktu luang seharian tanpa gangguan, kamu lebih milih apa?",
+        "pilihan": [
+            "Me time dong misal baca buku, nonton, scroll sosmed atau main game",
+            "Bebas aja, kadang sendiri asik, kadang pengen nongkrong",
+            "Langsung japri temen, cus keluar atau gabung aktivitas bareng orang lain"
+        ]
+    },
+    {
+        "pertanyaan": "Kalau kamu ketemu orang baru, kamu tipe yang gimana?",
+        "pilihan": [
+            "Agak kikuk di awal, butuh pemanasan biar nyaman",
+            "Bisa sih, tapi lihat situasi dan orangnya dulu",
+            "Gass! Mudah banget mulai ngobrol duluan"
+        ]
+    }
+]
+
+def score_quiz(answers):
+    scores = {role: 0 for role in ROLES}
+    for idx, ans in enumerate(answers):
+        if ans is not None:
+            scores[ROLES[QUESTIONS[idx]["pilihan"].index(ans)]] += 1
+    return scores
+
+def get_result(scores):
+    max_score = max(scores.values())
+    top_roles = [role for role, score in scores.items() if score == max_score]
+    if len(top_roles) == 1:
+        if top_roles[0] == "Introvert":
+            return "KAMU INTROVERT! BUTUH ME TIME BUAT NGECAS ENERGI, PESTA MENDING LEWAT DULU 😌📺"
+        elif top_roles[0] == "Ambivert":
+            return "KAMU AMBIVERT! MOOD FLEKSIBEL, KADANG BISA RAME KADANG BISA SUNYI, LET IT FLOW AJA 😎✨"
+        else:
+            return "KAMU EKSTROVERT! MAKIN RAME MAKIN HIDUP, ENERGI KAMU AUTO FULL KALAU KETEMU ORANG 🤩⚡"
+    else:
+        return "KAMU CAMPUR ADUK 😅 KADANG INTROVERT, KADANG EKSTROVERT, KADANG AMBIVERT... TERGANTUNG CUACA DAN MOOD 🌧️🌞"
+        # Jika ada beberapa role dengan skor tertinggi, tampilkan pesan umum
+
+# --- Streamlit UI ---
+st.image("personality_quiz_logo.png", width=250)
+st.title("🧐PERSONALITY QUIZ🧐")
+st.header("Mini Quiz ✨")
+
+if "p_index" not in st.session_state:
+    st.session_state.p_index = 0
+if "jawaban_user" not in st.session_state:
+    st.session_state.jawaban_user = [None] * len(QUESTIONS)
+if "submitted" not in st.session_state:
+    st.session_state.submitted = False
+
+index = st.session_state.p_index
+q = QUESTIONS[index]
+
+st.subheader(f"Pertanyaan ke-{index+1} dari {len(QUESTIONS)}")
+jawaban = st.radio(
+    q["pertanyaan"],
+    q["pilihan"],
+    index=q["pilihan"].index(st.session_state.jawaban_user[index]) if st.session_state.jawaban_user[index] in q["pilihan"] else 0,
+    key=f"radio_{index}"
+)
+st.session_state.jawaban_user[index] = jawaban
+
+col1, col2 = st.columns([1, 1])
+with col1:
+    st.button("Back", on_click=lambda: st.session_state.update(p_index=max(0, st.session_state.p_index-1)))
+with col2:
+    if index == len(QUESTIONS) - 1:
+        if st.button("Submit"):
+            if None in st.session_state.jawaban_user:
+                st.warning("Yukkk jawab semua pertanyaan dulu!")
+            else:
+                st.session_state.submitted = True
+    else:
+        st.button("Next", on_click=lambda: st.session_state.update(p_index=min(len(QUESTIONS)-1, st.session_state.p_index+1)))
+
+# Tampilkan hasil
+if st.session_state.submitted:
+    scores = score_quiz(st.session_state.jawaban_user)
+    hasil = get_result(scores)
+    st.success(hasil)
